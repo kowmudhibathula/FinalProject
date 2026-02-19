@@ -24,6 +24,10 @@ export const TOPICS: Topic[] = [
   { id: 'html', name: 'HTML', category: TopicCategory.WEB_TECH, description: 'Building the structure of the web.', icon: '🌐', supportedLanguages: ['html'] },
   { id: 'css', name: 'CSS', category: TopicCategory.WEB_TECH, description: 'Styling and layout for user interfaces.', icon: '🎨', supportedLanguages: ['css'] },
   { id: 'javascript', name: 'JavaScript', category: TopicCategory.WEB_TECH, description: 'Adding interactivity and logic to pages.', icon: '⚡', supportedLanguages: ['javascript'] },
+ // BACKEND
+  { id: 'nodejs', name: 'Node.js', category: TopicCategory.BACKEND, description: 'Server-side JavaScript runtime environment.', icon: '🟢', supportedLanguages: ['nodejs'] },
+  { id: 'express', name: 'Express.js', category: TopicCategory.BACKEND, description: 'Fast, unopinionated, minimalist web framework.', icon: '🚂', supportedLanguages: ['express'] },
+  { id: 'php_backend', name: 'PHP Backend', category: TopicCategory.BACKEND, description: 'Server-side scripting for dynamic web pages.', icon: '🐘', supportedLanguages: ['php'] },
 ];
 
 export const APP_NAME = "Foundational Mastery";

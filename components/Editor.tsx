@@ -5,22 +5,12 @@ interface EditorProps {
   value: string;
   onChange: (value: string) => void;
   language: string;
+  placeholder?: string;
 }
 
-const Editor: React.FC<EditorProps> = ({ value, onChange, language }) => {
+const Editor: React.FC<EditorProps> = ({ value, onChange, language, placeholder }) => {
   const preRef = useRef<HTMLPreElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Synchronize highlighting whenever value or language changes
-  useEffect(() => {
-    if (preRef.current) {
-      // @ts-ignore
-      if (window.Prism) {
-        // @ts-ignore
-        window.Prism.highlightElement(preRef.current);
-      }
-    }
-  }, [value, language]);
 
   const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
     if (preRef.current) {
@@ -30,10 +20,11 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language }) => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const start = e.currentTarget.selectionStart;
+    const end = e.currentTarget.selectionEnd;
+
     if (e.key === 'Tab') {
       e.preventDefault();
-      const start = e.currentTarget.selectionStart;
-      const end = e.currentTarget.selectionEnd;
       const newValue = value.substring(0, start) + "    " + value.substring(end);
       onChange(newValue);
       
@@ -42,13 +33,36 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language }) => {
           textAreaRef.current.selectionStart = textAreaRef.current.selectionEnd = start + 4;
         }
       }, 0);
+      return;
     }
-    
-    // Auto-bracket closing helper
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const lines = value.substring(0, start).split('\n');
+      const currentLine = lines[lines.length - 1];
+      const indentation = currentLine.match(/^\s*/)?.[0] || "";
+      
+      let extraIndentation = "";
+      const lastChar = currentLine.trim().slice(-1);
+      if (lastChar === '{' || lastChar === ':' || lastChar === '[') {
+        extraIndentation = "    ";
+      }
+
+      const newValue = value.substring(0, start) + "\n" + indentation + extraIndentation + value.substring(end);
+      onChange(newValue);
+
+      setTimeout(() => {
+        if (textAreaRef.current) {
+          textAreaRef.current.selectionStart = textAreaRef.current.selectionEnd = start + 1 + indentation.length + extraIndentation.length;
+        }
+      }, 0);
+      return;
+    }
+
     const pairs: Record<string, string> = { '(': ')', '{': '}', '[': ']', '"': '"', "'": "'" };
+    
+    // Auto-closing brackets
     if (pairs[e.key]) {
-      const start = e.currentTarget.selectionStart;
-      const end = e.currentTarget.selectionEnd;
       if (start === end) {
         e.preventDefault();
         const newValue = value.substring(0, start) + e.key + pairs[e.key] + value.substring(end);
@@ -56,6 +70,35 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language }) => {
         setTimeout(() => {
           if (textAreaRef.current) {
             textAreaRef.current.selectionStart = textAreaRef.current.selectionEnd = start + 1;
+          }
+        }, 0);
+      }
+      return;
+    }
+
+    // Overtyping closing brackets
+    const closingBrackets = [')', '}', ']', '"', "'"];
+    if (closingBrackets.includes(e.key) && start === end && value[start] === e.key) {
+      e.preventDefault();
+      setTimeout(() => {
+        if (textAreaRef.current) {
+          textAreaRef.current.selectionStart = textAreaRef.current.selectionEnd = start + 1;
+        }
+      }, 0);
+      return;
+    }
+
+    // Deleting pairs
+    if (e.key === 'Backspace' && start === end && start > 0) {
+      const charBefore = value[start - 1];
+      const charAfter = value[start];
+      if (pairs[charBefore] === charAfter) {
+        e.preventDefault();
+        const newValue = value.substring(0, start - 1) + value.substring(start + 1);
+        onChange(newValue);
+        setTimeout(() => {
+          if (textAreaRef.current) {
+            textAreaRef.current.selectionStart = textAreaRef.current.selectionEnd = start - 1;
           }
         }, 0);
       }
@@ -70,10 +113,10 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language }) => {
     'java': 'java',
     'html': 'html',
     'css': 'css',
-    'php': 'php'
+    'php': 'php',
+    'nodejs': 'javascript',
+    'express': 'javascript'
   };
-
-  const lineCount = value.split('\n').length;
 
   const sharedStyles: React.CSSProperties = {
     fontFamily: "'Fira Code', 'Courier New', monospace",
@@ -93,8 +136,30 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language }) => {
     textAlign: 'left'
   };
 
-  // We ensure a space at the end to help with scrollbar and cursor positioning
-  const highlightedValue = value + (value.endsWith('\n') ? ' ' : '');
+  const isPlaceholder = !value && !!placeholder;
+  const displayValue = isPlaceholder ? (placeholder || '') : value;
+  const lineCount = Math.max(displayValue.split('\n').length, 1);
+  const highlightedValue = displayValue + (displayValue.endsWith('\n') ? ' ' : '');
+
+  const getHighlightedCode = () => {
+    // @ts-ignore
+    if (window.Prism && value) {
+      const lang = prismLangMap[language] || 'javascript';
+      // @ts-ignore
+      const grammar = window.Prism.languages[lang] || window.Prism.languages.javascript;
+      if (grammar) {
+        // @ts-ignore
+        return window.Prism.highlight(value, grammar, lang);
+      }
+    }
+    // Fallback: Escape HTML and return raw text
+    return highlightedValue
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
 
   return (
     <div className="w-full h-full flex flex-col bg-[#0d1117] border border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
@@ -118,7 +183,7 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language }) => {
       <div className="flex-grow flex relative bg-[#0d1117] min-h-0">
         {/* Line Numbers Column */}
         <div className="w-16 bg-[#0d1117] border-r border-slate-800/50 flex flex-col items-center pt-8 select-none text-slate-700 text-[12px] font-bold z-20 shrink-0 overflow-hidden">
-          {Array.from({ length: Math.max(lineCount, 1) }).map((_, i) => (
+          {Array.from({ length: lineCount }).map((_, i) => (
             <div key={i} className="h-[28px] flex items-center justify-end w-full pr-5">{i + 1}</div>
           ))}
         </div>
@@ -134,10 +199,13 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language }) => {
               ...sharedStyles,
               color: '#ffffff',
               background: 'transparent',
-              opacity: 0.8 // Lowered slightly so the direct typing is very clear
+              opacity: isPlaceholder ? 0.3 : 1
             }}
           >
-            <code className={`language-${prismLangMap[language] || 'javascript'}`}>{highlightedValue}</code>
+            <code 
+              className={`language-${prismLangMap[language] || 'javascript'}`}
+              dangerouslySetInnerHTML={{ __html: getHighlightedCode() }}
+            />
           </pre>
 
           {/* Layer 2: The Direct User Input Area */}
@@ -147,14 +215,17 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language }) => {
             onChange={(e) => onChange(e.target.value)}
             onScroll={handleScroll}
             onKeyDown={handleKeyDown}
+            onPaste={(e) => e.preventDefault()}
+            onCopy={(e) => e.preventDefault()}
+            onCut={(e) => e.preventDefault()}
             spellCheck={false}
             autoFocus
             className="absolute inset-0 bg-transparent outline-none resize-none custom-scrollbar z-10"
             style={{ 
               ...sharedStyles,
-              color: '#ffffff', // VISIBLE WHITE TEXT
+              color: 'transparent',
               caretColor: '#6366f1',
-              WebkitTextFillColor: '#ffffff', // Ensures visibility in Safari/Chrome
+              WebkitTextFillColor: 'transparent',
               overflow: 'auto'
             }}
           />

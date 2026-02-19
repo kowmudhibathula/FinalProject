@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Topic, ProblemStatement, EvaluationResult, BugHuntChallenge, Progress, Difficulty, SupportedLanguage, CompletedChallenge } from './types';
+import { Topic, TopicCategory, ProblemStatement, EvaluationResult, BugHuntChallenge, Progress, Difficulty, SupportedLanguage, CompletedChallenge } from './types';
 import { TOPICS, APP_NAME } from './constants';
 import SkillMap from './components/SkillMap';
 import Editor from './components/Editor';
@@ -43,12 +42,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (challengeContextRef.current && userCode) {
-      localStorage.setItem(`fm_autosave_${challengeContextRef.current}`, userCode);
-    }
-  }, [userCode]);
-
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (userEmail.trim()) {
@@ -81,14 +74,12 @@ const App: React.FC = () => {
       if (activeMode === 'project') {
         const newProblem = await generateProblem(selectedTopic!.name, selectedDifficulty, lang);
         setProblem(newProblem);
-        const savedCode = localStorage.getItem(`fm_autosave_${challengeKey}`);
-        setUserCode(savedCode || newProblem.starterCode);
+        setUserCode("");
         setCurrentView('problem');
       } else {
         const newBugHunt = await generateBugHunt(selectedTopic!.name, lang);
         setBugHunt(newBugHunt);
-        const savedCode = localStorage.getItem(`fm_autosave_${challengeKey}`);
-        setUserCode(savedCode || newBugHunt.buggyCode);
+        setUserCode("");
         setCurrentView('bughunt');
       }
       setEvaluation(null);
@@ -102,8 +93,7 @@ const App: React.FC = () => {
 
   const handleResetCode = () => {
     if (confirm("Reset current buffer and discard changes?")) {
-      const originalCode = activeMode === 'project' ? problem?.starterCode : bugHunt?.buggyCode;
-      if (originalCode) setUserCode(originalCode);
+      setUserCode("");
     }
   };
 
@@ -119,8 +109,6 @@ const App: React.FC = () => {
       setEvaluation(result);
       
       if (result.passed) {
-        if (challengeContextRef.current) localStorage.removeItem(`fm_autosave_${challengeContextRef.current}`);
-        
         const bonus = activeMode === 'bughunt' ? 40 : (selectedDifficulty === Difficulty.HARD ? 100 : 50);
         
         const newEntry: CompletedChallenge = {
@@ -283,18 +271,30 @@ const App: React.FC = () => {
                 <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter">Choose Your Path</h2>
                 <button onClick={downloadReport} className="text-[9px] font-black uppercase text-indigo-600 border-2 border-indigo-100 px-4 py-2 rounded-xl hover:bg-white transition-all shadow-sm">📥 Detailed Report</button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {TOPICS.map(topic => (
-                  <div key={topic.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all group flex flex-col">
-                    <div className="text-3xl mb-6 flex items-center justify-center w-14 h-14 bg-slate-50 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all">{topic.icon}</div>
-                    <h3 className="text-xl font-black text-slate-900 mb-2">{topic.name}</h3>
-                    <p className="text-slate-400 text-[11px] font-medium leading-relaxed mb-8 flex-grow">{topic.description}</p>
-                    <div className="flex flex-col gap-3">
-                      <button onClick={() => startFlow(topic, 'project')} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[9px] tracking-widest hover:bg-indigo-600 transition-colors shadow-lg">🚀 Project Challenge</button>
-                      <button onClick={() => startFlow(topic, 'bughunt')} className="w-full py-4 bg-white border-2 border-slate-100 text-slate-600 rounded-2xl font-black uppercase text-[9px] tracking-widest hover:border-rose-500 hover:text-rose-500 transition-colors">🔎 Bug Hunt</button>
+              <div className="space-y-16">
+                {Object.values(TopicCategory).map(category => {
+                  const categoryTopics = TOPICS.filter(t => t.category === category);
+                  if (categoryTopics.length === 0) return null;
+                  
+                  return (
+                    <div key={category} className="space-y-6">
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-600 ml-2">{(category as string).replace('_', ' ')} Mastery</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {categoryTopics.map(topic => (
+                          <div key={topic.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all group flex flex-col">
+                            <div className="text-3xl mb-6 flex items-center justify-center w-14 h-14 bg-slate-50 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all">{topic.icon}</div>
+                            <h3 className="text-xl font-black text-slate-900 mb-2">{topic.name}</h3>
+                            <p className="text-slate-400 text-[11px] font-medium leading-relaxed mb-8 flex-grow">{topic.description}</p>
+                            <div className="flex flex-col gap-3">
+                              <button onClick={() => startFlow(topic, 'project')} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[9px] tracking-widest hover:bg-indigo-600 transition-colors shadow-lg">🚀 Project Challenge</button>
+                              <button onClick={() => startFlow(topic, 'bughunt')} className="w-full py-4 bg-white border-2 border-slate-100 text-slate-600 rounded-2xl font-black uppercase text-[9px] tracking-widest hover:border-rose-500 hover:text-rose-500 transition-colors">🔎 Bug Hunt</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
             <div className="lg:col-span-1 hidden lg:block overflow-y-auto custom-scrollbar">
@@ -330,7 +330,12 @@ const App: React.FC = () => {
             <div className="grid grid-cols-2 gap-6 pb-20">
               {selectedTopic?.supportedLanguages.map(lang => (
                 <button key={lang} onClick={() => handleStartChallenge(lang)} className="p-12 bg-slate-900 text-white rounded-[2.5rem] hover:bg-indigo-600 hover:scale-[1.05] transition-all text-2xl font-black capitalize shadow-2xl relative overflow-hidden group">
-                  <span className="relative z-10">{lang === 'cpp' ? 'C++' : lang}</span>
+                  <span className="relative z-10">
+                    {lang === 'cpp' ? 'C++' : 
+                     lang === 'nodejs' ? 'Node.js' : 
+                     lang === 'express' ? 'Express.js' : 
+                     lang}
+                  </span>
                 </button>
               ))}
             </div>
@@ -404,8 +409,43 @@ const App: React.FC = () => {
                 </div>
              </div>
              <div className="flex flex-col gap-6">
+                {evaluation && (
+                  <div className={`p-8 rounded-[2.5rem] border-2 animate-in fade-in slide-in-from-top-4 duration-500 ${evaluation.passed ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-black ${evaluation.passed ? 'bg-emerald-500' : 'bg-rose-500'}`}>
+                        {evaluation.passed ? '✓' : '!'}
+                      </div>
+                      <h3 className={`text-xl font-black ${evaluation.passed ? 'text-emerald-900' : 'text-rose-900'}`}>
+                        {evaluation.passed ? 'Mission Accomplished!' : 'Analysis Required'}
+                      </h3>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <p className={`text-sm font-bold uppercase tracking-wider mb-1 ${evaluation.passed ? 'text-emerald-600' : 'text-rose-600'}`}>Feedback</p>
+                        <p className="text-slate-700 font-medium leading-relaxed">{evaluation.feedback}</p>
+                      </div>
+                      {!evaluation.passed && (
+                        <div className="pt-4 border-t border-rose-200/50">
+                          <p className="text-sm font-bold uppercase tracking-wider mb-1 text-rose-600">Root Cause Analysis</p>
+                          <p className="text-slate-700 font-medium leading-relaxed">{evaluation.explanation}</p>
+                        </div>
+                      )}
+                      {evaluation.extraHint && (
+                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                          <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest mb-2">Mastery Hint</p>
+                          <p className="text-amber-900 text-sm font-bold">{evaluation.extraHint}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div className="h-[700px] shadow-2xl relative">
-                  <Editor value={userCode} onChange={setUserCode} language={activeMode === 'project' ? (problem?.language as string) : (bugHunt?.language as string)} />
+                  <Editor 
+                    value={userCode} 
+                    onChange={setUserCode} 
+                    language={activeMode === 'project' ? (problem?.language as string) : (bugHunt?.language as string)} 
+                    placeholder={activeMode === 'project' ? problem?.starterCode : bugHunt?.buggyCode}
+                  />
                 </div>
                 <div className="flex justify-between items-center pt-2 pb-12">
                   <button onClick={() => setCurrentView('dashboard')} className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-8 py-3 hover:text-slate-900 transition-colors">Terminate</button>

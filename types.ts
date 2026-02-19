@@ -7,10 +7,11 @@ export enum Difficulty {
 
 export enum TopicCategory {
   PROGRAMMING = 'PROGRAMMING',
-  WEB_TECH = 'WEB_TECH'
+  WEB_TECH = 'WEB_TECH',
+  BACKEND = 'BACKEND'
 }
 
-export type SupportedLanguage = 'python' | 'javascript' | 'java' | 'c' | 'cpp' | 'php' | 'html' | 'css';
+export type SupportedLanguage = 'python' | 'javascript' | 'java' | 'c' | 'cpp' | 'php' | 'html' | 'css' | 'nodejs' | 'express';
 
 export interface Topic {
   id: string;

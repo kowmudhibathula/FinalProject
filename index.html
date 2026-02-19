@@ -17,10 +17,13 @@
             font-family: 'Fira Code', monospace;
         }
         /* Fix for Prism padding in our layered editor */
-        pre[class*="language-"] {
+        pre[class*="language-"] , code[class*="language-"]{
             margin: 0 !important;
             padding: 0 !important;
             background: transparent !important;
+        }
+         pre[class*="language-"] {
+            padding: 32px !important;
         }
     </style>
 <script type="importmap">

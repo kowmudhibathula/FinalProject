@@ -70,7 +70,9 @@ export const evaluateCode = async (problem: ProblemStatement | BugHuntChallenge,
        Attempt Number: ${attempts}.
        Feedback Strategy: ${hintInstructions}
        User Code: \n${userCode}\n
-       Task: Check if the user successfully fixed the bugs mentioned in the context: ${problem.context}. Return deep logical feedback.`
+       Task: Check if the user successfully fixed the bugs mentioned in the context: ${problem.context}. 
+       Return deep logical feedback.
+       CRITICAL: The 'explanation' field must provide a clear, concise, and beginner-friendly breakdown of why the code failed or what bugs remain. Use simple analogies and avoid overly dense jargon.`
     : `System: Expert Code Reviewer. 
        Challenge: ${problem.title}. 
        Language: ${problem.language}.
@@ -79,7 +81,8 @@ export const evaluateCode = async (problem: ProblemStatement | BugHuntChallenge,
        User Code: \n${userCode}\n
        Constraints: ${(problem as ProblemStatement).constraints.join(", ")}.
        Expected Result: ${(problem as ProblemStatement).expectedOutput}.
-       Task: Evaluate the code against the requirements and scenario. Be encouraging but rigorous.`;
+       Task: Evaluate the code against the requirements and scenario. Be encouraging but rigorous.
+        CRITICAL: The 'explanation' field must provide a clear, concise, and beginner-friendly breakdown of any issues found. Explain the "why" behind the logic in simple terms.`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
