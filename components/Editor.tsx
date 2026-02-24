@@ -122,9 +122,13 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language, placeholder 
     fontFamily: "'Fira Code', 'Courier New', monospace",
     lineHeight: '28px',
     fontSize: '15px',
+    fontWeight: 400,
+    WebkitFontSmoothing: 'antialiased',
+    MozOsxFontSmoothing: 'grayscale',
     tabSize: 4,
     letterSpacing: 'normal',
     fontVariantLigatures: 'none',
+    textRendering: 'optimizeSpeed',
     padding: '32px',
     margin: 0,
     border: 'none',
@@ -250,11 +254,30 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, language, placeholder 
       </div>
 
       <style>{`
-        /* Sync Prism padding exactly with textarea padding */
-        pre[class*="language-"] { 
-          padding: 32px !important; 
+        /* Sync Prism styles exactly with textarea */
+        pre[class*="language-"], 
+        pre[class*="language-"] code { 
+          font-family: 'Fira Code', 'Courier New', monospace !important;
+          line-height: 28px !important;
+          font-size: 15px !important;
+          font-weight: 400 !important;
+          -webkit-font-smoothing: antialiased !important;
+          -moz-osx-font-smoothing: grayscale !important;
+          padding: 0 !important;
           margin: 0 !important;
           background: transparent !important;
+          white-space: pre !important;
+          word-spacing: normal !important;
+          word-break: normal !important;
+          word-wrap: normal !important;
+          tab-size: 4 !important;
+          letter-spacing: normal !important;
+          font-variant-ligatures: none !important;
+          text-rendering: optimizeSpeed !important;
+        }
+
+        pre[class*="language-"] {
+          padding: 32px !important;
         }
         
         textarea::selection {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Topic, TopicCategory, ProblemStatement, EvaluationResult, BugHuntChallenge, Progress, Difficulty, SupportedLanguage, CompletedChallenge } from './types';
 import { TOPICS, APP_NAME } from './constants';
@@ -79,7 +80,7 @@ const App: React.FC = () => {
       } else {
         const newBugHunt = await generateBugHunt(selectedTopic!.name, lang);
         setBugHunt(newBugHunt);
-        setUserCode("");
+        setUserCode(newBugHunt.buggyCode); // Display buggy code for Bug Hunt
         setCurrentView('bughunt');
       }
       setEvaluation(null);
@@ -93,7 +94,11 @@ const App: React.FC = () => {
 
   const handleResetCode = () => {
     if (confirm("Reset current buffer and discard changes?")) {
-      setUserCode("");
+      if (activeMode === 'bughunt' && bugHunt) {
+        setUserCode(bugHunt.buggyCode);
+      } else {
+        setUserCode("");
+      }
     }
   };
 
@@ -448,7 +453,10 @@ const App: React.FC = () => {
                   />
                 </div>
                 <div className="flex justify-between items-center pt-2 pb-12">
-                  <button onClick={() => setCurrentView('dashboard')} className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-8 py-3 hover:text-slate-900 transition-colors">Terminate</button>
+                  <div className="flex gap-4">
+                    <button onClick={() => setCurrentView('dashboard')} className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-8 py-3 hover:text-slate-900 transition-colors">Terminate</button>
+                    <button onClick={handleResetCode} className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-8 py-3 hover:text-rose-600 transition-colors">Reset Code</button>
+                  </div>
                   <button onClick={handleSubmitCode} className={`px-10 py-3.5 text-white font-black rounded-xl shadow-xl uppercase tracking-tight transition-all active:scale-95 ${activeMode === 'project' ? 'bg-indigo-600' : 'bg-rose-600'}`}>Run Code ⚡</button>
                 </div>
              </div>
