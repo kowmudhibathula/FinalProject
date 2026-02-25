@@ -46,6 +46,11 @@ export const listAvailableModels = async () => {
   }
 };
 
+// TEMP: Log available Gemini models at startup for debugging
+listAvailableModels().then(models => {
+  console.log('Available Gemini models for this API key:', models);
+});
+
 export const generateProblem = async (topic: string, difficulty: Difficulty, language: SupportedLanguage): Promise<ProblemStatement> => {
   try {
     const model = await getWorkingGeminiModel();
