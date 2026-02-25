@@ -1,3 +1,34 @@
+// Utility to get a working Gemini model name
+let cachedModelName: string | null = null;
+export const getWorkingGeminiModel = async (): Promise<string> => {
+  if (cachedModelName) return cachedModelName;
+  try {
+    const models = await ai.models.list();
+    // Prefer gemini-3-flash-preview, gemini-pro, gemini-1.5-pro, etc.
+    const preferred = [
+      'gemini-3-flash-preview',
+      'gemini-pro',
+      'gemini-1.5-pro',
+      'gemini-1.0-pro',
+    ];
+    for (const name of preferred) {
+      if (models.some((m: any) => m.name === name)) {
+        cachedModelName = name;
+        return name;
+      }
+    }
+    // Fallback: use the first available model
+    if (models.length > 0 && models[0].name) {
+      cachedModelName = models[0].name;
+      return models[0].name;
+    }
+    throw new Error('No Gemini models available for your API key.');
+  } catch (error) {
+    console.error('Error getting working Gemini model:', error);
+    // Fallback to a default
+    return 'gemini-pro';
+  }
+};
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { ProblemStatement, Difficulty, EvaluationResult, BugHuntChallenge, SupportedLanguage } from "../types";
@@ -17,8 +48,9 @@ export const listAvailableModels = async () => {
 
 export const generateProblem = async (topic: string, difficulty: Difficulty, language: SupportedLanguage): Promise<ProblemStatement> => {
   try {
+    const model = await getWorkingGeminiModel();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model,
     contents: `Generate a real-world mini project for the topic "${topic}" at the "${difficulty}" difficulty level using "${language}".
     
     CRITICAL FORMATTING RULES:
@@ -100,8 +132,9 @@ export const evaluateCode = async (problem: ProblemStatement | BugHuntChallenge,
         CRITICAL: The 'explanation' field must provide a clear, concise, and beginner-friendly breakdown of any issues found. Explain the "why" behind the logic in simple terms.`;
 
   try {
+    const model = await getWorkingGeminiModel();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -128,8 +161,9 @@ export const evaluateCode = async (problem: ProblemStatement | BugHuntChallenge,
 
 export const generateBugHunt = async (topic: string, language: SupportedLanguage): Promise<BugHuntChallenge> => {
   try {
+    const model = await getWorkingGeminiModel();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model,
       contents: `Generate a 'Bug Hunt' challenge for "${topic}" in "${language}".
       
       The 'buggyCode' should contain 1-3 subtle logical or syntax errors.
