@@ -6,7 +6,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateProblem = async (topic: string, difficulty: Difficulty, language: SupportedLanguage): Promise<ProblemStatement> => {
   const response = await ai.models.generateContent({
-    model: 'gemini-1.5-pro',
+    model: 'gemini-pro',
     contents: `Generate a real-world mini project for the topic "${topic}" at the "${difficulty}" difficulty level using "${language}".
     
     CRITICAL FORMATTING RULES:
@@ -85,7 +85,7 @@ export const evaluateCode = async (problem: ProblemStatement | BugHuntChallenge,
         CRITICAL: The 'explanation' field must provide a clear, concise, and beginner-friendly breakdown of any issues found. Explain the "why" behind the logic in simple terms.`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-1.5-pro',
+    model: 'gemini-pro',
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -109,7 +109,7 @@ export const evaluateCode = async (problem: ProblemStatement | BugHuntChallenge,
 
 export const generateBugHunt = async (topic: string, language: SupportedLanguage): Promise<BugHuntChallenge> => {
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-pro',
     contents: `Generate a 'Bug Hunt' challenge for "${topic}" in "${language}".
     
     The 'buggyCode' should contain 1-3 subtle logical or syntax errors.
