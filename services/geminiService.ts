@@ -6,7 +6,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateProblem = async (topic: string, difficulty: Difficulty, language: SupportedLanguage): Promise<ProblemStatement> => {
   const response = await ai.models.generateContent({
-    model: 'gemini-3-pro',
+    model: 'gemini-1.5-pro',
     contents: `Generate a real-world mini project for the topic "${topic}" at the "${difficulty}" difficulty level using "${language}".
     
     CRITICAL FORMATTING RULES:
@@ -85,7 +85,7 @@ export const evaluateCode = async (problem: ProblemStatement | BugHuntChallenge,
         CRITICAL: The 'explanation' field must provide a clear, concise, and beginner-friendly breakdown of any issues found. Explain the "why" behind the logic in simple terms.`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-pro',
+    model: 'gemini-1.5-pro',
     contents: prompt,
     config: {
       responseMimeType: "application/json",
