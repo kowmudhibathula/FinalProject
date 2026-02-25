@@ -4,9 +4,21 @@ import { ProblemStatement, Difficulty, EvaluationResult, BugHuntChallenge, Suppo
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+// Utility function to list available models for debugging
+export const listAvailableModels = async () => {
+  try {
+    const models = await ai.models.list();
+    return models;
+  } catch (error) {
+    console.error("Error listing models:", error);
+    return null;
+  }
+};
+
 export const generateProblem = async (topic: string, difficulty: Difficulty, language: SupportedLanguage): Promise<ProblemStatement> => {
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
     contents: `Generate a real-world mini project for the topic "${topic}" at the "${difficulty}" difficulty level using "${language}".
     
     CRITICAL FORMATTING RULES:
@@ -45,12 +57,15 @@ export const generateProblem = async (topic: string, difficulty: Difficulty, lan
     }
   });
 
-  return JSON.parse(response.text);
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("Error in generateProblem:", error);
+    throw error;
+  }
 };
 
 export const evaluateCode = async (problem: ProblemStatement | BugHuntChallenge, userCode: string, attempts: number): Promise<EvaluationResult> => {
   const isBugHunt = 'buggyCode' in problem;
-  
   // Logic for progressive hints based on attempts
   let hintInstructions = "";
   if (attempts === 1) {
@@ -63,7 +78,7 @@ export const evaluateCode = async (problem: ProblemStatement | BugHuntChallenge,
     hintInstructions = "The user is struggling. Provide a small code snippet in the 'extraHint' field that shows exactly how to solve the most difficult part of the problem.";
   }
 
-  const prompt = isBugHunt 
+  const prompt = isBugHunt
     ? `System: Expert Code Reviewer. 
        Challenge: ${problem.title}. 
        Topic: Fix the buggy ${problem.language} code. 
@@ -79,60 +94,68 @@ export const evaluateCode = async (problem: ProblemStatement | BugHuntChallenge,
        Attempt Number: ${attempts}.
        Feedback Strategy: ${hintInstructions}
        User Code: \n${userCode}\n
-       Constraints: ${(problem as ProblemStatement).constraints.join(", ")}.
+       Constraints: ${(problem as ProblemStatement).constraints.join(", ")}
        Expected Result: ${(problem as ProblemStatement).expectedOutput}.
        Task: Evaluate the code against the requirements and scenario. Be encouraging but rigorous.
         CRITICAL: The 'explanation' field must provide a clear, concise, and beginner-friendly breakdown of any issues found. Explain the "why" behind the logic in simple terms.`;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          passed: { type: Type.BOOLEAN },
-          score: { type: Type.NUMBER },
-          feedback: { type: Type.STRING },
-          explanation: { type: Type.STRING },
-          suggestedCode: { type: Type.STRING },
-          extraHint: { type: Type.STRING }
-        },
-        required: ["passed", "score", "feedback", "explanation", "suggestedCode"]
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            passed: { type: Type.BOOLEAN },
+            score: { type: Type.NUMBER },
+            feedback: { type: Type.STRING },
+            explanation: { type: Type.STRING },
+            suggestedCode: { type: Type.STRING },
+            extraHint: { type: Type.STRING }
+          },
+          required: ["passed", "score", "feedback", "explanation", "suggestedCode"]
+        }
       }
-    }
-  });
-
-  return JSON.parse(response.text);
+    });
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("Error in evaluateCode:", error);
+    throw error;
+  }
 };
 
 export const generateBugHunt = async (topic: string, language: SupportedLanguage): Promise<BugHuntChallenge> => {
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: `Generate a 'Bug Hunt' challenge for "${topic}" in "${language}".
-    
-    The 'buggyCode' should contain 1-3 subtle logical or syntax errors.
-    The 'context' should explain what the code is *supposed* to do.
-    The 'hint' should give a cryptic but helpful clue about where the bug lies.
-    
-    Ensure 'buggyCode' is properly indented line-by-line.`,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          id: { type: Type.STRING },
-          title: { type: Type.STRING },
-          buggyCode: { type: Type.STRING },
-          context: { type: Type.STRING },
-          language: { type: Type.STRING },
-          hint: { type: Type.STRING }
-        },
-        required: ["id", "title", "buggyCode", "context", "language", "hint"]
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `Generate a 'Bug Hunt' challenge for "${topic}" in "${language}".
+      
+      The 'buggyCode' should contain 1-3 subtle logical or syntax errors.
+      The 'context' should explain what the code is *supposed* to do.
+      The 'hint' should give a cryptic but helpful clue about where the bug lies.
+      
+      Ensure 'buggyCode' is properly indented line-by-line.`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            id: { type: Type.STRING },
+            title: { type: Type.STRING },
+            buggyCode: { type: Type.STRING },
+            context: { type: Type.STRING },
+            language: { type: Type.STRING },
+            hint: { type: Type.STRING }
+          },
+          required: ["id", "title", "buggyCode", "context", "language", "hint"]
+        }
       }
-    }
-  });
-
-  return JSON.parse(response.text);
+    });
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("Error in generateBugHunt:", error);
+    throw error;
+  }
 };
